@@ -24,11 +24,11 @@
             android:id="@+id/img_reference"
             android:layout_width="match_parent"
             android:layout_height="300dp"/>
-        <TextView
-            android:layout_width="match_parent"
+        <Button
             android:layout_height="wrap_content"
-            android:textSize="50dp"
-            android:text="Hola mundillo"/>
+            android:layout_width="match_parent"
+            android:text="Guardar"
+            android:id="@+id/btn_guardar"/>
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"

@@ -53,7 +53,7 @@ class DetailFragment : BottomSheetDialogFragment() {
         var url = "https://maps.googleapis.com/maps/api/place/details/json?place_id=$place_id&key=AIzaSyAYuDoz5piHJyOJ996l344nzwhdAcYM2Wg"
         var stringRequest = StringRequest(Request.Method.GET, url, { response ->
             var gson = Gson()
-            var obj = gson?.fromJson(response, Place::class.java)
+            var obj = gson.fromJson(response, Place::class.java)
             binding.txtId.text = obj.result.name
             binding.txtAddress.text = obj.result.formatted_address
             var first_photo = obj.result.photos.first()
