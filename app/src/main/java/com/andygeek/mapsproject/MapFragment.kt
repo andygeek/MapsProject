@@ -33,8 +33,8 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     private lateinit var mContext : Context
 
     // Latitude and longitude initial
-    private var latitude: String = "-12.0717281697085"
-    private var longitude: String = "-75.20610196970848"
+    private var latitude: String = "-12.085676267849536"
+    private var longitude: String = "-77.02613957226276"
 
     // List of Points
     private lateinit var points: MutableList<Point>
@@ -127,6 +127,8 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         initialPosition()
         mMap.setOnMapClickListener { lt: LatLng ->
             clickPoint(lt)
+            println("Lat: ${lt.latitude}")
+            println("Lon: ${lt.longitude}")
         }
         mMap.setOnMarkerClickListener { marker: Marker ->
             clickMarker(marker)
@@ -158,8 +160,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         mMap.clear()
         val point = MarkerOptions().position(lt).title(getString(R.string.here))
         mMap.addMarker(point)
-        latitude = lt.latitude.toString()
-        longitude = lt.longitude.toString()
     }
 
     // Click in marker
@@ -180,9 +180,9 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
     // Initial position
     private fun initialPosition() {
-        val sydney = LatLng(-12.0717281697085, -75.20610196970848)
-        mMap.addMarker(MarkerOptions().position(sydney).title("Here"))
-        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(sydney, 10f))
+        val lima = LatLng(-12.085676267849536, -77.02613957226276)
+        mMap.addMarker(MarkerOptions().position(lima).title("Here"))
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(lima, 10f))
     }
 
     // Add markers with response

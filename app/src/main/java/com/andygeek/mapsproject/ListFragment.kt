@@ -37,21 +37,18 @@ class ListFragment : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        // Inflate the layout for this fragment
-        binding = DataBindingUtil.inflate(inflater, R.layout.fragment_list, container, false)
-
         listSave = arrayListOf()
-
         db = AppDatabase.getAppDatabase(mContext)!!
 
+        // Inflate the layout for this fragment
+        binding = DataBindingUtil.inflate(inflater, R.layout.fragment_list, container, false)
 
         doAsync {
             val data = db.placeDao().getAll()
             data.forEach {
-                val saveTemp = Save(it.place_name, it.addess, it.place_name)
+                val saveTemp = Save(it.place_name, it.addess, it.image)
                 listSave.add(saveTemp)
             }
-            println(listSave)
         }
 
         // Wait for Data
@@ -62,10 +59,6 @@ class ListFragment : Fragment() {
         }, 300)
 
         return binding.root
-    }
-
-    override fun onStart() {
-        super.onStart()
     }
 
 }
