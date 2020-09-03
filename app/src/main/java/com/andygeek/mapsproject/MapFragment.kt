@@ -127,8 +127,6 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         initialPosition()
         mMap.setOnMapClickListener { lt: LatLng ->
             clickPoint(lt)
-            println("Lat: ${lt.latitude}")
-            println("Lon: ${lt.longitude}")
         }
         mMap.setOnMarkerClickListener { marker: Marker ->
             clickMarker(marker)
@@ -159,6 +157,8 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     private fun clickPoint(lt: LatLng) {
         mMap.clear()
         val point = MarkerOptions().position(lt).title(getString(R.string.here))
+        latitude = lt.latitude.toString()
+        longitude = lt.longitude.toString()
         mMap.addMarker(point)
     }
 
