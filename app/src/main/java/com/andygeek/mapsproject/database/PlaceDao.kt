@@ -1,6 +1,7 @@
 package com.andygeek.mapsproject.database
 
 import androidx.room.Dao
+import androidx.room.Delete
 import androidx.room.Insert
 import androidx.room.Query
 
@@ -11,4 +12,10 @@ interface PlaceDao {
 
     @Insert
     fun insertAll(vararg place : Place)
+
+    @Delete
+    fun deletePlace(place: Place)
+
+    @Query("SELECT * FROM Place WHERE place_name == :name")
+    fun getPlaceByName(name: String): List<Place>
 }

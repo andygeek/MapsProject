@@ -24,14 +24,14 @@ private const val ARG_PARAM = "PLACE_ID"
 
 class DetailFragment : BottomSheetDialogFragment() {
 
-    lateinit var binding: FragmentDetailBinding
     private var db: AppDatabase? = null
     private var placeDao: PlaceDao? = null
-    lateinit var  obj : Place
-    lateinit var mContext : Context
+    private lateinit var mContext : Context
+    private lateinit var binding: FragmentDetailBinding
+    private lateinit var obj : Place
 
     // Place id brought from MapFragment
-    private var place_id: String? = null
+    private var placeId: String? = null
 
     companion object {
         @JvmStatic
@@ -53,92 +53,75 @@ class DetailFragment : BottomSheetDialogFragment() {
         savedInstanceState: Bundle?
     ): View? {
         arguments?.let {
-            place_id = it.getString(ARG_PARAM)
+            placeId = it.getString(ARG_PARAM)
         }
-        binding = DataBindingUtil.inflate<FragmentDetailBinding>(
+        binding = DataBindingUtil.inflate(
             inflater,
             R.layout.fragment_detail,
             container,
             false
         )
 
+        // Request for the information of place
+        requestPlace(placeId.toString())
+
+        // Initialize database
         db = AppDatabase.getAppDatabase(mContext)
         placeDao = db?.placeDao()
 
-
-        request_place(place_id.toString())
-
-        binding.btnGuardar.setOnClickListener {
+        // Save Buton
+        binding.btnSave.setOnClickListener {
             GlobalScope.launch {
-                var place = com.andygeek.mapsproject.database.Place(obj.result.place_id, obj.result.name, null, null, null, null, null)
+                val place = com.andygeek.mapsproject.database.Place(obj.result.place_id, obj.result.name, obj.result.formatted_address, null, null, null, null)
                 placeDao?.insertAll(place)
-                var data = db?.placeDao()?.getAll()
-                data?.forEach {
-                    println(it)
-                }
             }
         }
+
         return binding.root
     }
 
     // Request place from API Google Maps
-    fun request_place(place_id: String) {
+    private fun requestPlace(place_id: String) {
         val queue = Volley.newRequestQueue(context)
-        var url = "https://maps.googleapis.com/maps/api/place/details/json?place_id=$place_id&key=AIzaSyAYuDoz5piHJyOJ996l344nzwhdAcYM2Wg"
-        var stringRequest = StringRequest(Request.Method.GET, url, { response ->
-            println(response)
-            var gson = Gson()
+        val url = "https://maps.googleapis.com/maps/api/place/details/json?place_id=$place_id&key=${getString(R.string.api_key_google)}"
+        val stringRequest = StringRequest(Request.Method.GET, url, { response ->
+            val gson = Gson()
             obj = gson.fromJson(response, Place::class.java)
-            println(obj.result.photos)
+
+            // Show the some variables
             binding.txtId.text = obj.result.name
             binding.txtAddress.text = obj.result.formatted_address
-            var url : String? = null
+            val ratingOfPlace = "Rating: ${obj.result.rating}"
+            binding.rating.text = ratingOfPlace
 
-            if(obj.result.rating == null){
-                binding.rating.visibility = View.INVISIBLE
-            }else{
-                binding.rating.text = "Rating: ${obj.result.rating.toString()}"
-            }
+            // Show the first image of place
+            val firstPhoto = obj.result.photos.first()
+            val photoReferenceKey = firstPhoto.photo_reference
+            val photoUrl = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=300&photoreference=$photoReferenceKey&key=${getString(R.string.api_key_google)}"
+            Glide.with(this).load(photoUrl).centerCrop().placeholder(R.drawable.loading).into(binding.imgReference)
 
-            if (obj.result.reviews != null){
 
-                val recipeList : MutableList<Recipe>
-                recipeList = arrayListOf()
-                var num = 1
-                var reviews = obj.result.reviews.size
-                if(reviews >= 5){
-                    for (i in 0..4){
-                        num++
-                        if(obj.result.reviews[i] != null){
-                            println(obj.result.reviews[i].profile_photo_url)
-                            val recipe = Recipe(obj.result.reviews[i].author_name, obj.result.reviews[i].text, obj.result.reviews[i].profile_photo_url)
-                            recipeList.add(recipe)
-                        }
-                    }
+            // Variables for ListView that required Recipe and RecipeAdapter
+            val reviewerList : MutableList<Recipe>
+            reviewerList = arrayListOf()
+
+            // For the reviewers are older than 5
+            val reviews = obj.result.reviews.size
+            if(reviews >= 5){
+                for (i in 0..4){
+                    val recipe = Recipe(obj.result.reviews[i].author_name, obj.result.reviews[i].text, obj.result.reviews[i].profile_photo_url)
+                    reviewerList.add(recipe)
                 }
-                else{
-                    for (i in 0..reviews-1){
-                        num++
-                        if(obj.result.reviews[i] != null){
-                            println(obj.result.reviews[i].profile_photo_url)
-                            val recipe = Recipe(obj.result.reviews[i].author_name, obj.result.reviews[i].text, obj.result.reviews[i].profile_photo_url)
-                            recipeList.add(recipe)
-                        }
-                    }
+            }
+            else{
+                for (i in 0 until reviews){
+                    val recipe = Recipe(obj.result.reviews[i].author_name, obj.result.reviews[i].text, obj.result.reviews[i].profile_photo_url)
+                    reviewerList.add(recipe)
                 }
-                val adapter = RecipeAdapter(mContext, recipeList)
-                binding.listViewReviews.adapter = adapter
             }
-            if(obj.result.photos == null){
-                println("No hay foto")
-                Glide.with(this).load(R.drawable.sin_imagen).centerCrop().placeholder(R.drawable.loading).into(binding.imgReference)
-            }else{
-                println("Awqui hay foto")
-                var first_photo = obj.result.photos.first()
-                var reference = first_photo.photo_reference
-                url = "https://maps.googleapis.com/maps/api/place/photo?maxwidth=300&photoreference=$reference&key=AIzaSyAYuDoz5piHJyOJ996l344nzwhdAcYM2Wg"
-                Glide.with(this).load(url).centerCrop().placeholder(R.drawable.loading).into(binding.imgReference)
-            }
+            val adapter = RecipeAdapter(mContext, reviewerList)
+            binding.listViewReviews.adapter = adapter
+
         }, {
             println("Error")
         })

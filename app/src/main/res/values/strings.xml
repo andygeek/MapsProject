@@ -2,10 +2,13 @@
     <string name="api_key_google">AIzaSyAYuDoz5piHJyOJ996l344nzwhdAcYM2Wg</string>
     <string name="app_name">MapsProject</string>
     <string name="find_hint">Restaurantes, Parques ...</string>
-    <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
     <string name="get_data">Obteniendo datos</string>
     <string name="save">Guardar como favorito</string>
     <string name="list_save">Lista de favoritos</string>
     <string name="here">Aquí</string>
+    <string name="update">Actualizar lista</string>
+    <string name="message_lack_keyword">Falta palabra clave a buscar</string>
+    <string name="message_lack_latitude_longitude">Debe seleccionar un punto en el mapa</string>
+    <string name="search">Buscar</string>
 </resources>
