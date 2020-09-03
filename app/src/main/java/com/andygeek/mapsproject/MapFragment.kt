@@ -1,17 +1,16 @@
 package com.andygeek.mapsproject
 
+import android.content.Context
 import android.os.Bundle
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import android.widget.Button
+import android.widget.Toast
 import androidx.appcompat.widget.SearchView
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.databinding.DataBindingUtil
-import androidx.fragment.app.FragmentManager
+import androidx.navigation.findNavController
 import com.android.volley.Request
-import com.android.volley.Response
 import com.android.volley.toolbox.StringRequest
 import com.android.volley.toolbox.Volley
 import com.andygeek.mapsproject.data.MyDataEntity
@@ -25,28 +24,42 @@ import com.google.android.gms.maps.model.BitmapDescriptorFactory
 import com.google.android.gms.maps.model.LatLng
 import com.google.android.gms.maps.model.Marker
 import com.google.android.gms.maps.model.MarkerOptions
-import com.google.android.material.bottomsheet.BottomSheetBehavior
-import com.google.android.material.bottomsheet.BottomSheetDialogFragment
 import com.google.gson.Gson
-
-private const val ARG_PARAM = "PLACE_ID"
 
 class MapFragment : Fragment(), OnMapReadyCallback {
 
     private lateinit var mMap: GoogleMap
-    private lateinit var latitude: String
-    private lateinit var longitude: String
+    private lateinit var message : Toast
+    private lateinit var mContext : Context
 
-    private lateinit var points : MutableList<Point>
+    // Latitude and longitude initial
+    private var latitude: String = "-12.085676267849536"
+    private var longitude: String = "-77.02613957226276"
 
-    private var param1: String? = null
+    // List of Points
+    private lateinit var points: MutableList<Point>
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         arguments?.let {
-            param1 = it.getString(ARG_PARAM)
+
         }
         points = mutableListOf()
+    }
+
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        mContext = context
+    }
+
+    companion object {
+        @JvmStatic
+        fun newInstance(param: String) =
+            MapFragment().apply {
+                arguments = Bundle().apply {
+                    //putString(ARG_PARAM, param)
+                }
+            }
     }
 
     override fun onCreateView(
@@ -63,17 +76,41 @@ class MapFragment : Fragment(), OnMapReadyCallback {
 
         binding.findLocation.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
-                request_googlemaps(latitude, longitude, binding.findLocation.query.toString())
+                if(binding.findLocation.query.toString() == ""){
+                    message = Toast.makeText(context,getString(R.string.message_lack_keyword),Toast.LENGTH_SHORT)
+                    message.show()
+                }else if (latitude == "" || longitude == ""){
+                    message = Toast.makeText(context,getString(R.string.message_lack_latitude_longitude),Toast.LENGTH_SHORT)
+                    message.show()
+                }else{
+                    requestGooglemaps(latitude, longitude, binding.findLocation.query.toString())
+                    latitude = ""
+                    longitude = ""
+                }
                 return true
             }
+
             override fun onQueryTextChange(newText: String?): Boolean {
                 return false
             }
         })
 
-        binding.btnTest.setOnClickListener {
-            //var bottom = DetailFragment.newInstance("Andy")
-            //bottom.show(activity?.supportFragmentManager!!, "Tag")
+        binding.btnSearch.setOnClickListener {
+            if(binding.findLocation.query.toString() == ""){
+                message = Toast.makeText(context,getString(R.string.message_lack_keyword),Toast.LENGTH_SHORT)
+                message.show()
+            }else if (latitude == "" || longitude == ""){
+                message = Toast.makeText(context,getString(R.string.message_lack_latitude_longitude),Toast.LENGTH_SHORT)
+                message.show()
+            }else{
+                requestGooglemaps(latitude, longitude, binding.findLocation.query.toString())
+                latitude = ""
+                longitude = ""
+            }
+        }
+
+        binding.btnList.setOnClickListener {
+            it.findNavController().navigate(R.id.action_mapFragment_to_listFragment)
         }
         return binding.root
     }
@@ -84,33 +121,28 @@ class MapFragment : Fragment(), OnMapReadyCallback {
         mapFragment?.getMapAsync(this)
     }
 
-    companion object {
-        fun newInstance(param1: String, param2: String) =
-            MapFragment().apply {
-                arguments = Bundle().apply {
-                    putString(ARG_PARAM, param1)
-                }
-            }
-    }
-
+    // State of map when the app initilize
     override fun onMapReady(googleMap: GoogleMap) {
         mMap = googleMap
-        initial_position()
+        initialPosition()
         mMap.setOnMapClickListener { lt: LatLng ->
-            click_point(lt)
+            clickPoint(lt)
+            println("Lat: ${lt.latitude}")
+            println("Lon: ${lt.longitude}")
         }
         mMap.setOnMarkerClickListener { marker: Marker ->
-            click_marker(marker)
+            clickMarker(marker)
         }
     }
 
     // Request to Google Maps
-    fun request_googlemaps(latitude: String, longitude: String, keyword: String) {
+    private fun requestGooglemaps(latitude: String, longitude: String, keyword: String) {
         val queue = Volley.newRequestQueue(context)
-        var url = "https://maps.googleapis.com/maps/api/place/nearbysearch/json?key=AIzaSyAYuDoz5piHJyOJ996l344nzwhdAcYM2Wg&location=$latitude,$longitude&keyword=$keyword&radius=2000"
+        val url =
+            "https://maps.googleapis.com/maps/api/place/nearbysearch/json?key=${getString(R.string.api_key_google)}&location=$latitude,$longitude&keyword=$keyword&radius=2000"
         val stringRequest =
             StringRequest(Request.Method.GET, url, { response ->
-                add_markers(response)
+                addMarkers(response)
             }, {
                 println("Error")
             })
@@ -118,55 +150,59 @@ class MapFragment : Fragment(), OnMapReadyCallback {
     }
 
     // Open detail fragment
-    fun open_detail(param : String){
-        var detailFragment = DetailFragment.newInstance(param)
+    private fun openDetail(param: String) {
+        val detailFragment = DetailFragment.newInstance(param)
         detailFragment.show(activity?.supportFragmentManager!!, "Tag")
     }
 
     // Click in point
-    fun click_point(lt: LatLng){
+    private fun clickPoint(lt: LatLng) {
         mMap.clear()
-        var point = MarkerOptions().position(lt).title("Here")
+        val point = MarkerOptions().position(lt).title(getString(R.string.here))
         mMap.addMarker(point)
-        latitude = lt.latitude.toString()
-        longitude = lt.longitude.toString()
     }
 
     // Click in marker
-    fun click_marker(marker : Marker):Boolean{
+    private fun clickMarker(marker: Marker): Boolean {
         if (marker.isInfoWindowShown) {
             marker.hideInfoWindow()
-
         } else {
             marker.showInfoWindow()
-            var point_send = points.find { p -> marker.title.toString().equals(p.name) }
-            open_detail(point_send?.id_place.toString())
+            val pointSend = points.find { p ->
+                marker.title.toString() == p.name
+            }
+            if(pointSend != null){
+                openDetail(pointSend?.id_place.toString())
+            }
         }
         return true
     }
 
     // Initial position
-    fun initial_position(){
-        val sydney = LatLng(-34.0, 151.0)
-        mMap.addMarker(MarkerOptions().position(sydney).title("Here"))
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(sydney))
+    private fun initialPosition() {
+        val lima = LatLng(-12.085676267849536, -77.02613957226276)
+        mMap.addMarker(MarkerOptions().position(lima).title("Here"))
+        mMap.moveCamera(CameraUpdateFactory.newLatLngZoom(lima, 10f))
     }
 
     // Add markers with response
-    fun add_markers(response : String){
-        var gson = Gson()
-        var obj = gson?.fromJson(response, MyDataEntity::class.java)
+    private fun addMarkers(response: String) {
+        val gson = Gson()
+        val obj = gson.fromJson(response, MyDataEntity::class.java)
         mMap.clear()
         points.clear()
         obj.results.forEach {
-            var temporal_point = Point(it.place_id, it.name, it.geometry.location.lat,it.geometry.location.lng )
-            points.add(temporal_point)
+            val temporalPoint =
+                Point(it.place_id, it.name, it.geometry.location.lat, it.geometry.location.lng)
+            points.add(temporalPoint)
         }
         points.forEach {
-            var latLng = LatLng(it.latitude, it.longitude)
-            var point = MarkerOptions().position(latLng).title(it.name).icon(BitmapDescriptorFactory.fromResource(R.drawable.icon_marker_1))
+            val latLng = LatLng(it.latitude, it.longitude)
+            val point = MarkerOptions().position(latLng).title(it.name)
+                .icon(BitmapDescriptorFactory.fromResource(R.drawable.icon_marker_1))
             mMap.addMarker(point)
         }
 
     }
+
 }
